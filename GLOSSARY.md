@@ -69,7 +69,7 @@ One user's declared attraction to another user, which requires the sender to hav
 _Avoid_: Like, interest, wink
 
 **Uncrush**:
-Withdrawing a crush one has sent.
+Withdrawing a crush one has sent, which also silences every notification the other user would cause the withdrawer until the withdrawer sends a new crush.
 _Avoid_: Unlike, dislike
 
 **Connection**:
