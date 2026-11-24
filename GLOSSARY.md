@@ -110,10 +110,15 @@ _Avoid_: Active, connected
 The moment a user stopped being online.
 _Avoid_: Last connection, last login
 
+**Meetup**:
+A real-life meeting one connected user proposes to the other, with a time and a place, which the other accepts or declines and either can cancel.
+_Avoid_: Date, event, appointment
+
 ### Relationships
 
 - A **User** has exactly one **Profile**.
 - A **Crush** goes from one **User** to another; two crushes in opposite directions form a **Connection**.
 - An **Uncrush** of a connected user breaks the **Connection** and closes their **Conversation**, which reopens with its history if they connect again.
+- A **Meetup** exists only between connected users and is cancelled when their **Connection** breaks.
 - A **Block** or a **Fake Report** removes the crushes, and so the **Connection**, between the two users.
 - Only **Compatible** users with a **Complete Profile** are suggested or found by search.

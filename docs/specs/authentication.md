@@ -97,5 +97,5 @@ To record in `docs/dependencies.md` when they are added (ADR 0001):
 
 ## Later
 
-- OAuth login (bonus): the user model must allow a user without a password. Decided in the bonus selection ticket.
+- OAuth login (bonus): the user model must allow a user without a password; see `docs/specs/bonus-overview.md`.
 - Email change and account deletion: account lifecycle.
