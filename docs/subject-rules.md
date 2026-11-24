@@ -7,7 +7,7 @@ The subject reference (e.g. `III`, `IV.2`) points to the source chapter for the 
 ## General (III, VI.1)
 
 - **R-GEN-01**: Zero errors, warnings or notices, server-side and client-side (browser console).
-- **R-GEN-02**: Any programming language. Frameworks are limited to micro-frameworks: a router plus optional templating, with no ORM, no validators and no user account manager. This definition is the one applied at the defense. Silex is explicitly forbidden (Doctrine integration).
+- **R-GEN-02**: Any programming language. Frameworks are limited to micro-frameworks: a router plus optional templating, with no ORM, no validators and no user account manager. This definition is the one applied at the defense. The subject suggests Sinatra (Ruby), Express (Node, explicitly considered a micro-framework), Flask (Python), Scalatra (Scala) and Slim (PHP). Silex is explicitly forbidden (Doctrine integration).
 - **R-GEN-03**: Any library needed for the project is allowed, including UI libraries (React, Angular, Vue, Bootstrap, Semantic, or any combination), as long as R-GEN-02 holds.
 - **R-GEN-04**: Anything not explicitly allowed is forbidden.
 - **R-GEN-05**: Free relational or graph database (MySQL, MariaDB, PostgreSQL, Cassandra, InfluxDB, Neo4j, etc.). Queries are written by hand; a homegrown library to simplify query handling is allowed.
