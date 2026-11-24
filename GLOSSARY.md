@@ -10,6 +10,10 @@ A dating site where users build a profile, find each other, send crushes, and ch
 A person's account: identity, credentials and verification state.
 _Avoid_: Account, member
 
+**Verified User**:
+A user who has confirmed their email address through the link sent at registration or a password reset; only verified users can log in.
+_Avoid_: Active user, confirmed account
+
 **Profile**:
 The public part of a user: gender, sexual preference, biography, interest tags, photos, birth date and location.
 _Avoid_: Card, page
