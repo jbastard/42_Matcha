@@ -9,7 +9,7 @@ How Matcha runs on the OVH VPS (Debian 13, 4 vCPU, 7.6 GiB RAM, Docker + Compose
   - `gamble.dishaah.fr`: `reverse_proxy blackjack-web:80`
   - Compression and the automatic HTTP to HTTPS redirect only. Files versioned under `deploy/edge/`.
 - **`matcha` stack** (`/opt/matcha`, user `matcha`): publishes no port.
-  - `app`: `ghcr.io/jbastard/matcha-app:X.Y.Z`, one Node process serving `/api`, `/ws` and the SPA build (R-GEN-07 built-in server). On networks `edge` (alias `matcha-app`) and the stack's default network. Health check on `GET /health`. Security headers set by Express.
+  - `app`: `ghcr.io/jbastard/matcha-app:X.Y.Z`, one Node process serving `/api`, `/ws` and the SPA build (R-GEN-07 built-in server). On networks `edge` (alias `matcha-app`) and the stack's default network. Health check on `GET /health`, which answers `{ "status": "ok", "version": "X.Y.Z" }` with the version baked into the image. Security headers set by Express.
   - `migrate`: same image, runs the forward-only migrations and exits; `app` depends on it with `service_completed_successfully`.
   - `db`: `postgis/postgis` pinned to PostgreSQL 18, default network only.
 - **Blackjack**: unchanged images except its web Caddy listening on `:80` (plain HTTP), no published port, joined to `edge`.
@@ -34,6 +34,7 @@ How Matcha runs on the OVH VPS (Debian 13, 4 vCPU, 7.6 GiB RAM, Docker + Compose
 
 ## Release flow
 
+0. A CI workflow runs the checks on every push to `main`; a release is cut only from a `main` commit whose CI is green.
 1. A `vX.Y.Z` tag is pushed. The workflow (`on: push: tags: ['v*']`, one deploy at a time via `concurrency`) runs the CI checks, builds `matcha-app` and pushes it to GHCR as `X.Y.Z`. The image embeds the production `compose.yml` at `/deploy/compose.yml`.
 2. The deploy job, in a GitHub Environment `production` restricted to `v*` tags, SSHes as `matcha` with a key forced to `/opt/matcha/deploy.sh` and sends `deploy vX.Y.Z`.
 3. `deploy.sh` (same shape as Blackjack's, accepts only `deploy <vX.Y.Z>` and `status`):
@@ -44,8 +45,19 @@ How Matcha runs on the OVH VPS (Debian 13, 4 vCPU, 7.6 GiB RAM, Docker + Compose
 
 ## Rollback
 
-- Rolling back is redeploying the previous tag. Migrations are never reversed: each one stays compatible with the previous image (expand, then contract in a later release).
+- Rolling back is redeploying the previous tag: the release workflow also accepts `workflow_dispatch`, run with the tag as ref (`gh workflow run release.yml --ref vX.Y.Z`), so the `production` Environment restriction to `v*` still holds; the build is skipped when `matcha-app:X.Y.Z` already exists on GHCR. The faulty tag is never deleted. Migrations are never reversed: each one stays compatible with the previous image (expand, then contract in a later release).
 - A migration that damages data is repaired by hand from the pre-deploy dump.
+
+## Release skill
+
+Cutting a release goes through a project skill, `.claude/skills/release/SKILL.md`, with `disable-model-invocation: true`: only the user starts it (`/release`), never an agent.
+
+1. **Checks**, each one blocking: current branch is `main`; working tree clean; local `main` equals `origin/main` after a fetch; the `main` CI run for HEAD is green; the target tag does not exist yet.
+2. **Version**: semver in the `v0.Y.Z` series until the mandatory part is ready for the defense, which is `v1.0.0`; the first release is `v0.1.0`. Minor for a feature, patch for a fix. The skill reads the commits and migrations since the last tag, proposes the bump with its reason, and the user confirms or corrects it. No commit convention is required.
+3. **Migrations**: the skill lists the migrations added since the last tag and flags destructive operations by heuristic (`DROP`, `RENAME`, `ALTER ... TYPE`, `SET NOT NULL`, `ADD ... NOT NULL` without `DEFAULT`). Each flagged migration needs the user's explicit confirmation that it keeps the previous image working; nothing flagged, nothing asked.
+4. **Notes and tag**: the skill drafts release notes from the commits since the last tag, with a section listing the migrations, and uses them as the message of an annotated tag, which it pushes.
+5. **Report**: it follows the tag's workflow run (`gh run watch`), then reads `https://matcha.dishaah.fr/health` and compares `version` with the tag, which also detects an automatic rollback by `deploy.sh`. On success it creates the GitHub Release from the same notes (`gh release create`).
+6. **Rollback**: when the run fails, the version does not match, or the user reports a problem afterwards, the skill offers to redeploy the previous tag through `workflow_dispatch` (see Rollback) and does so only after the user confirms.
 
 ## Backups
 
