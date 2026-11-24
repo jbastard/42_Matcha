@@ -50,6 +50,10 @@ _Avoid_: Hashtag, hobby, interest
 The interest tags two profiles share.
 _Avoid_: Shared interests, overlap
 
+**Suggestion**:
+A compatible profile proposed to a user, ranked first by how close it is, then by common tags and popularity score.
+_Avoid_: Match, recommendation
+
 **Popularity Score**:
 A public number from 0 to 100 measuring how much interest other users currently show in a user.
 _Avoid_: Fame rating, rank, karma
