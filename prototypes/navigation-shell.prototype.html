@@ -1,0 +1,361 @@
+<!doctype html>
+<!--
+PROTOTYPE, throwaway. Answers issue 24 "Screen inventory and navigation skeleton".
+Three navigation shells (A, B, C) around one shared screen inventory, switchable
+from the bottom bar. Open this file in Firefox or Chrome; no build, no server.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matcha navigation prototype</title>
+<style>
+:root {
+  --green: #3f6b3a; --green-soft: #e4eedf; --coral: #e8664f; --coral-soft: #fde6e1;
+  --bg: #faf8f4; --surface: #ffffff; --text: #2a2723; --muted: #6f6a62; --line: #e6e1d8;
+  --danger: #b3261e; --radius: 16px;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --green: #8fbf84; --green-soft: #24331f; --coral: #f08a76; --coral-soft: #3a2420;
+    --bg: #171614; --surface: #211f1c; --text: #ede9e2; --muted: #a39d93; --line: #35322d; --danger: #f2b8b5; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #888; font: 15px/1.45 system-ui, sans-serif; color: var(--text); }
+a { color: var(--green); cursor: pointer; }
+button { font: inherit; cursor: pointer; }
+.stage { min-height: 100vh; display: flex; justify-content: center; padding: 0 0 90px; }
+.frame { background: var(--bg); width: 100%; min-height: calc(100vh - 90px); display: flex; flex-direction: column; position: relative; }
+.frame.phone .lbl { display: none; }
+.frame.phone { width: min(375px, 100%); height: min(740px, calc(100vh - 110px)); min-height: 0; margin-top: 16px; border-radius: 28px; overflow: hidden; box-shadow: 0 0 0 8px #222; }
+.frame.phone .scroll { overflow-y: auto; }
+.scroll { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.wordmark { font-family: Georgia, serif; font-size: 24px; color: var(--green); font-weight: 600; text-decoration: none; }
+header.app { display: flex; align-items: center; gap: 12px; padding: 10px 20px; background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+header.app .spacer { flex: 1; }
+nav.links a { margin-right: 16px; text-decoration: none; color: var(--muted); font-weight: 500; }
+nav.links a.on { color: var(--green); }
+.iconbtn { position: relative; border: 0; background: transparent; color: var(--text); padding: 6px 8px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.iconbtn:hover { background: var(--green-soft); }
+.iconbtn.on { color: var(--green); }
+.badge { position: absolute; top: -2px; right: -4px; background: var(--coral); color: #fff; font-size: 11px; font-weight: 700; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; display: grid; place-items: center; }
+.badge.inline { position: static; }
+.pill { border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 999px; padding: 6px 14px; }
+.pill.primary { background: var(--green); color: var(--surface); border-color: var(--green); }
+.pill.crush { background: var(--coral); color: #fff; border-color: var(--coral); }
+.pill.danger { color: var(--danger); }
+.pill[disabled] { opacity: .45; cursor: not-allowed; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #c9b8a3, #8a9b7e); display: inline-block; flex: none; }
+.avatar.lg { width: 96px; height: 96px; }
+main { flex: 1; padding: 20px; max-width: 1040px; width: 100%; margin: 0 auto; }
+footer.app { padding: 16px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; display: flex; gap: 16px; flex-wrap: wrap; background: var(--surface); }
+h1 { font-family: Georgia, serif; font-weight: 600; margin: 0 0 12px; font-size: 26px; }
+h2 { font-size: 17px; margin: 18px 0 8px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+.photo { aspect-ratio: 4/5; border-radius: 12px; background: linear-gradient(160deg, #d8c8b4, #7f9474); margin-bottom: 8px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.muted { color: var(--muted); }
+.field { display: block; margin: 10px 0; }
+.field span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.field input, .field textarea, .field select { width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; }
+.narrow { max-width: 420px; margin: 20px auto; }
+.skel { background: var(--line); border-radius: 12px; animation: pulse 1.2s infinite; }
+@keyframes pulse { 50% { opacity: .5; } }
+.empty, .error { text-align: center; padding: 48px 16px; }
+.error { color: var(--danger); }
+.banner { background: var(--green-soft); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; font-size: 14px; }
+.banner.warn { background: var(--coral-soft); }
+.tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+.tabs a { padding: 8px 12px; text-decoration: none; color: var(--muted); }
+.tabs a.on { color: var(--green); border-bottom: 2px solid var(--green); }
+.list > div { display: flex; gap: 12px; align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--line); }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--coral); display: inline-block; }
+.online { color: var(--green); font-size: 13px; }
+.bubble { max-width: 70%; padding: 8px 12px; border-radius: 14px; margin: 6px 0; background: var(--surface); border: 1px solid var(--line); }
+.bubble.me { margin-left: auto; background: var(--green-soft); }
+.panel { position: absolute; right: 16px; top: 56px; width: 340px; max-width: calc(100% - 32px); z-index: 20; box-shadow: 0 8px 30px rgba(0,0,0,.18); }
+.steps { display: flex; gap: 6px; margin-bottom: 16px; }
+.steps i { flex: 1; height: 5px; border-radius: 3px; background: var(--line); }
+.steps i.on { background: var(--green); }
+.chip { display: inline-block; padding: 3px 10px; border-radius: 999px; background: var(--green-soft); font-size: 13px; margin: 2px; }
+.chip.common { outline: 1px solid var(--green); }
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+
+/* Variant A: top links on desktop, bottom tab bar on phone */
+.vA .tabbar { display: none; }
+.phone.vA nav.links, .phone.vA .hide-phone { display: none; }
+.phone.vA .tabbar { display: flex; justify-content: space-around; border-top: 1px solid var(--line); background: var(--surface); padding: 6px 0 10px; }
+.tabbar a { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: var(--muted); text-decoration: none; position: relative; }
+.tabbar a.on { color: var(--green); }
+.tabbar svg { width: 22px; height: 22px; }
+
+/* Variant B: left sidebar on desktop, drawer on phone */
+.vB .body { flex: 1; display: flex; }
+.vB aside { width: 220px; border-right: 1px solid var(--line); padding: 16px 10px; background: var(--surface); flex: none; }
+.vB aside a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; text-decoration: none; color: var(--text); position: relative; }
+.vB aside a.on { background: var(--green-soft); color: var(--green); }
+.vB aside .badge { position: static; margin-left: auto; }
+.vB aside svg { width: 18px; height: 18px; }
+.vB .burger { display: none; }
+.phone.vB .burger { display: inline-flex; }
+.phone.vB aside { position: absolute; top: 0; bottom: 0; left: 0; z-index: 30; width: 260px; transform: translateX(-100%); transition: transform .2s; box-shadow: 0 0 40px rgba(0,0,0,.25); }
+.phone.vB.drawer aside { transform: none; }
+.phone.vB.drawer .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.35); z-index: 25; }
+
+/* Variant C: one header with icon buttons and labelled destinations */
+.vC header.app { flex-wrap: wrap; }
+.vC .labels { font-size: 12px; }
+.phone.vC .lbl { display: none; }
+.phone.vC header.app { gap: 2px; padding: 8px 10px; }
+
+svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Prototype chrome: not part of the design */
+.proto { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 100; background: #111; color: #fff; border-radius: 999px; padding: 8px 14px; display: flex; gap: 10px; align-items: center; font: 13px system-ui; box-shadow: 0 6px 24px rgba(0,0,0,.4); flex-wrap: wrap; justify-content: center; max-width: calc(100vw - 24px); }
+.proto button, .proto select { background: #333; color: #fff; border: 0; border-radius: 999px; padding: 5px 10px; font: inherit; }
+.proto b { color: #ffd54a; }
+.inv { position: fixed; inset: 20px 20px 80px; z-index: 99; background: #fff; color: #111; overflow: auto; border-radius: 12px; padding: 20px; font: 13px system-ui; box-shadow: 0 10px 40px rgba(0,0,0,.4); }
+.inv table { border-collapse: collapse; width: 100%; }
+.inv td, .inv th { border-bottom: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
+.inv a { color: #0645ad; }
+</style>
+</head>
+<body>
+<div class="stage"><div id="frame" class="frame"></div></div>
+<div class="proto" id="proto"></div>
+<div class="inv" id="inv" hidden></div>
+<script>
+const I = {
+  compass: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 8-2 6-6 2 2-6z"/></svg>',
+  search: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
+  heart: '<svg viewBox="0 0 24 24"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/></svg>',
+  chat: '<svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  bell: '<svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>',
+  user: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+  logout: '<svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>',
+  menu: '<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
+  settings: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  map: '<svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
+};
+
+const PEOPLE = ['lea', 'samir', 'ines', 'tom', 'nora', 'yanis', 'chloe', 'malik'].map((u, i) => ({
+  id: '0193a1b2-' + i, username: u, age: 22 + i * 2, km: [2, 4, 8, 13, 21, 35, 60, 120][i], score: 92 - i * 7, common: 4 - (i % 4),
+}));
+
+// The screen inventory. access: public = logged out only, auth = any logged-in user, complete = Complete Profile only.
+const SCREENS = [
+  { id: 'landing', path: '/', title: 'Landing', access: 'public', states: ['ready'] },
+  { id: 'register', path: '/register', title: 'Sign up', access: 'public', states: ['ready', 'field errors', 'sent'], rules: 'R-AUTH-01, R-AUTH-02' },
+  { id: 'login', path: '/login', title: 'Log in', access: 'public', states: ['ready', 'wrong credentials', 'unverified', 'rate limited'], rules: 'R-AUTH-04' },
+  { id: 'verify', path: '/verify?token=', title: 'Email verification', access: 'any', states: ['verifying', 'verified', 'invalid or expired'], rules: 'R-AUTH-03' },
+  { id: 'forgot', path: '/forgot-password', title: 'Forgot password', access: 'public', states: ['ready', 'sent'], rules: 'R-AUTH-05' },
+  { id: 'reset', path: '/reset-password?token=', title: 'Reset password', access: 'any', states: ['ready', 'done', 'invalid or expired'], rules: 'R-AUTH-05' },
+  { id: 'onboarding', path: '/onboarding', title: 'Complete your profile', access: 'auth', states: ['1 about you', '2 interests', '3 photos', '4 location: ask consent', '4 location: refused, manual'], rules: 'R-PROF-01, R-PROF-07, R-PROF-08' },
+  { id: 'discover', path: '/discover', title: 'Discover (suggestions)', access: 'complete', states: ['ready', 'loading', 'empty', 'error'], rules: 'R-BROW-01..06' },
+  { id: 'search', path: '/search', title: 'Search', access: 'complete', states: ['criteria', 'results', 'loading', 'no results', 'error'], rules: 'R-SRCH-01, R-SRCH-02' },
+  { id: 'profile', path: '/profiles/:id', title: 'Profile view', access: 'complete', states: ['no relation', 'crushed you', 'you crushed', 'connected', 'you have no profile picture', 'unavailable', 'loading'], rules: 'R-VIEW-01..10' },
+  { id: 'activity', path: '/activity', title: 'Activity (visitors, crushes)', access: 'complete', states: ['visitors', 'crushes', 'empty', 'loading'], rules: 'R-PROF-04, R-PROF-05' },
+  { id: 'chat', path: '/chat', title: 'Conversations', access: 'complete', states: ['ready', 'empty', 'loading', 'error'], rules: 'R-CHAT-01' },
+  { id: 'conversation', path: '/chat/:id', title: 'Conversation', access: 'complete', states: ['open', 'closed (connection broken)', 'loading'], rules: 'R-CHAT-01, R-VIEW-05' },
+  { id: 'notifications', path: '/notifications', title: 'Notifications', access: 'complete', states: ['ready', 'empty', 'loading'], rules: 'R-NOTI-01, R-NOTI-02' },
+  { id: 'me', path: '/me', title: 'My profile (edit)', access: 'auth', states: ['ready', 'saving', 'field errors'], rules: 'R-PROF-01, R-PROF-03, R-PROF-06, R-PROF-09' },
+  { id: 'settings', path: '/settings', title: 'Settings (account)', access: 'auth', states: ['ready'], rules: 'R-PROF-03' },
+  { id: 'map', path: '/map', title: 'Map (bonus)', access: 'complete', states: ['ready', 'loading'], rules: 'R-BONUS-01' },
+  { id: 'notfound', path: '*', title: 'Not found', access: 'any', states: ['ready'] },
+];
+
+const NAV = [
+  { id: 'discover', label: 'Discover', icon: 'compass' },
+  { id: 'search', label: 'Search', icon: 'search' },
+  { id: 'activity', label: 'Activity', icon: 'heart' },
+  { id: 'chat', label: 'Chat', icon: 'chat', badge: 'chat' },
+  { id: 'me', label: 'Profile', icon: 'user' },
+];
+
+const S = { v: 'A', s: 'discover', st: 'ready', a: 'complete', f: 'desktop', chat: 2, notif: 5, drawer: false, panel: false };
+function load() {
+  if (innerWidth < 640) S.f = 'phone';
+  const p = new URLSearchParams(location.hash.slice(1));
+  for (const k of ['v', 's', 'st', 'a', 'f']) if (p.get(k)) S[k] = p.get(k);
+}
+function save() {
+  history.replaceState(null, '', '#' + new URLSearchParams({ v: S.v, s: S.s, st: S.st, a: S.a, f: S.f }));
+}
+const screen = () => SCREENS.find(x => x.id === S.s) || SCREENS.at(-1);
+function go(id, st) { S.s = id; S.st = st || screen().states[0]; S.drawer = false; S.panel = false; render(); }
+
+// Access gate: where would the router send this user?
+function gate() {
+  const sc = screen();
+  if (S.a === 'out' && (sc.access === 'auth' || sc.access === 'complete')) return ['login', 'Redirected to log in: this page needs an account.'];
+  if (S.a !== 'out' && sc.access === 'public') return [S.a === 'complete' ? 'discover' : 'onboarding', 'Redirected: you are already logged in.'];
+  if (S.a === 'incomplete' && sc.access === 'complete') return ['onboarding', 'Redirected: complete your profile to browse, search and chat.'];
+  return null;
+}
+
+const badge = n => n ? `<span class="badge">${n}</span>` : '';
+const navLink = (n, cls = '') => `<a class="${cls} ${S.s === n.id ? 'on' : ''}" onclick="go('${n.id}')">${n.label}</a>`;
+const logoutBtn = (labelled = true) => `<button class="iconbtn" title="Log out" onclick="logout()">${I.logout}${labelled ? '<span class="lbl">Log out</span>' : ''}</button>`;
+const bellBtn = () => `<button class="iconbtn ${S.panel ? 'on' : ''}" title="Notifications" onclick="togglePanel()">${I.bell}${badge(S.notif)}</button>`;
+const chatBtn = () => `<a class="iconbtn ${S.s === 'chat' || S.s === 'conversation' ? 'on' : ''}" title="Chat" onclick="go('chat')">${I.chat}${badge(S.chat)}</a>`;
+const wordmark = () => `<a class="wordmark" onclick="go('${S.a === 'out' ? 'landing' : S.a === 'complete' ? 'discover' : 'onboarding'}')">matcha</a>`;
+
+function publicHeader() {
+  return `<header class="app">${wordmark()}<span class="spacer"></span>
+    <button class="pill" onclick="go('login')">Log in</button><button class="pill primary" onclick="go('register')">Sign up</button></header>`;
+}
+function incompleteHeader() {
+  return `<header class="app">${wordmark()}<span class="spacer"></span>
+    <a class="iconbtn" title="Settings" onclick="go('settings')">${I.settings}</a>${logoutBtn()}</header>`;
+}
+function footer() {
+  return `<footer class="app"><span>matcha</span><a>About</a><a>Privacy</a><a>Terms</a><span class="spacer"></span><span>42 project</span></footer>`;
+}
+
+function shellA(body) {
+  if (S.a !== 'complete') return (S.a === 'out' ? publicHeader() : incompleteHeader()) + `<div class="scroll"><main>${body}</main>${footer()}</div>`;
+  const tab = n => `<a class="${S.s === n.id || (n.id === 'chat' && S.s === 'conversation') ? 'on' : ''}" onclick="go('${n.id}')">${I[n.icon]}${n.label}${n.badge ? badge(S[n.badge]) : ''}</a>`;
+  return `<header class="app">${wordmark()}<nav class="links">${NAV.filter(n => n.id !== 'chat' && n.id !== 'me').map(n => navLink(n)).join('')}</nav>
+      <span class="spacer"></span><span class="hide-phone">${chatBtn()}</span>${bellBtn()}
+      <a class="iconbtn hide-phone" onclick="go('me')"><span class="avatar"></span></a><a class="iconbtn hide-phone" title="Settings" onclick="go('settings')">${I.settings}</a>${logoutBtn(S.f !== 'phone')}</header>
+    <div class="scroll"><main>${body}</main>${footer()}</div>
+    <nav class="tabbar">${NAV.map(tab).join('')}</nav>`;
+}
+
+function shellB(body) {
+  if (S.a !== 'complete') return (S.a === 'out' ? publicHeader() : incompleteHeader()) + `<div class="scroll"><main>${body}</main>${footer()}</div>`;
+  const item = n => `<a class="${S.s === n.id || (n.id === 'chat' && S.s === 'conversation') ? 'on' : ''}" onclick="go('${n.id}')">${I[n.icon]}${n.label}${n.badge ? badge(S[n.badge]) : ''}</a>`;
+  const extra = [{ id: 'notifications', label: 'Notifications', icon: 'bell', badge: 'notif' }, { id: 'map', label: 'Map', icon: 'map' }, { id: 'settings', label: 'Settings', icon: 'settings' }];
+  return `<header class="app"><button class="iconbtn burger" onclick="S.drawer=true;render()" title="Menu">${I.menu}${badge(S.chat + S.notif)}</button>${wordmark()}<span class="spacer"></span>
+      ${chatBtn()}${bellBtn()}${logoutBtn()}</header>
+    <div class="scrim" onclick="S.drawer=false;render()"></div>
+    <div class="body"><aside><div class="row" style="padding:4px 12px 14px"><span class="avatar"></span><b>jbastard</b></div>${NAV.map(item).join('')}<hr style="border:0;border-top:1px solid var(--line)">${extra.map(item).join('')}</aside>
+    <div class="scroll"><main>${body}</main>${footer()}</div></div>`;
+}
+
+function shellC(body) {
+  if (S.a !== 'complete') return (S.a === 'out' ? publicHeader() : incompleteHeader()) + `<div class="scroll"><main>${body}</main>${footer()}</div>`;
+  const ib = n => `<a class="iconbtn ${S.s === n.id || (n.id === 'chat' && S.s === 'conversation') ? 'on' : ''}" title="${n.label}" onclick="go('${n.id}')">${I[n.icon]}<span class="lbl">${n.label}</span>${n.badge ? badge(S[n.badge]) : ''}</a>`;
+  return `<header class="app">${wordmark()}<span class="spacer"></span>
+      ${NAV.filter(n => n.id !== 'me').map(ib).join('')}${bellBtn()}
+      <a class="iconbtn ${S.s === 'me' ? 'on' : ''}" title="Profile" onclick="go('me')"><span class="avatar"></span></a>${logoutBtn(false)}</header>
+    <div class="scroll"><main>${body}</main>${footer()}</div>`;
+}
+
+function notifPanel() {
+  if (!S.panel) return '';
+  const items = [['lea', 'sent you a Crush', '2 min'], ['samir', 'visited your profile', '10 min'], ['ines', "It's mutual! You are now connected", '1 h'], ['tom', 'sent you a message', '3 h'], ['nora', 'withdrew their Crush', 'yesterday']];
+  return `<div class="card panel"><div class="row" style="justify-content:space-between"><b>Notifications</b><a onclick="go('notifications')">See all</a></div>
+    <div class="list">${items.map(([u, t, d]) => `<div><span class="avatar"></span><span><a onclick="go('profile')">${u}</a> ${t}<br><span class="muted">${d}</span></span></div>`).join('')}</div></div>`;
+}
+
+const loading = () => `<div class="grid">${'<div class="skel" style="height:240px"></div>'.repeat(6)}</div>`;
+const empty = (msg, cta) => `<div class="empty card">${msg}${cta ? `<div style="margin-top:12px">${cta}</div>` : ''}</div>`;
+const err = () => `<div class="error card">Something went wrong while loading this page.<div style="margin-top:12px"><button class="pill">Try again</button></div></div>`;
+const tags = (n) => ['#hiking', '#vegan', '#jazz', '#cinema', '#geek', '#climbing'].map((t, i) => `<span class="chip ${i < n ? 'common' : ''}">${t}</span>`).join('');
+const personCard = p => `<div class="card" onclick="go('profile')" style="cursor:pointer"><div class="photo"></div><b>${p.username}</b>, ${p.age}<div class="muted">${p.km} km · popularity ${p.score} · ${p.common} common tags</div></div>`;
+const sortFilter = () => `<div class="toolbar"><select class="pill"><option>Sort: best suggestion</option><option>Age</option><option>Distance</option><option>Popularity</option><option>Common tags</option></select>
+  <button class="pill">Age 18-99</button><button class="pill">Within 50 km</button><button class="pill">Popularity 0-100</button><button class="pill">Tags</button></div>`;
+
+const R = {
+  landing: () => `<div class="narrow" style="text-align:center;max-width:560px"><h1 style="font-size:40px">Find someone who gets your vibe.</h1><p class="muted">Matcha suggests people nearby who share what you love.</p><div class="row" style="justify-content:center"><button class="pill primary" onclick="go('register')">Sign up</button><button class="pill" onclick="go('login')">Log in</button></div></div>`,
+  register: st => st === 'sent'
+    ? `<div class="narrow card"><h1>Check your inbox</h1><p>We sent a link to <b>you@example.com</b>. Open it to verify your email, then log in.</p><a onclick="go('login')">Go to log in</a></div>`
+    : `<div class="narrow card"><h1>Sign up</h1>${['Email', 'Username', 'First name', 'Last name', 'Password'].map(f => `<label class="field"><span>${f}</span><input>${st === 'field errors' && f === 'Password' ? '<small class="error" style="padding:0">This password is too common. Pick another one.</small>' : ''}</label>`).join('')}<p class="muted" style="font-size:13px">At least 10 characters. Strength: fair</p><button class="pill primary">Create account</button><p class="muted">Already have one? <a onclick="go('login')">Log in</a></p></div>`,
+  login: st => `<div class="narrow card"><h1>Log in</h1>
+    ${st === 'wrong credentials' ? '<div class="banner warn">Wrong username or password.</div>' : ''}
+    ${st === 'unverified' ? '<div class="banner">Check your inbox to verify your email, then log in. <a>Send the link again</a></div>' : ''}
+    ${st === 'rate limited' ? '<div class="banner warn">Too many attempts. Try again in 15 minutes.</div>' : ''}
+    <label class="field"><span>Username</span><input></label><label class="field"><span>Password</span><input type="password"></label>
+    <button class="pill primary" onclick="S.a='complete';go('discover')">Log in</button>
+    <p><a onclick="go('forgot')">Forgot your password?</a> · <a onclick="go('register')">Sign up</a></p></div>`,
+  verify: st => `<div class="narrow card"><h1>Email verification</h1>${st === 'verifying' ? '<div class="skel" style="height:20px"></div>' : st === 'verified' ? '<p>Your email is verified. You can log in.</p><button class="pill primary" onclick="go(\'login\')">Log in</button>' : '<p>This link is invalid or has expired.</p><a onclick="go(\'login\')">Log in to get a new one</a>'}</div>`,
+  forgot: st => `<div class="narrow card"><h1>Forgot your password?</h1>${st === 'sent' ? '<p>If an account uses this email, a reset link is on its way.</p>' : '<label class="field"><span>Email</span><input></label><button class="pill primary">Send reset link</button>'}</div>`,
+  reset: st => `<div class="narrow card"><h1>New password</h1>${st === 'ready' ? '<label class="field"><span>New password</span><input type="password"></label><button class="pill primary">Save password</button>' : st === 'done' ? '<p>Password changed. Log in with your new password.</p>' : '<p>This link is invalid or has expired.</p><a onclick="go(\'forgot\')">Ask for a new one</a>'}</div>`,
+  onboarding: st => {
+    const n = +st[0];
+    const steps = `<div class="steps">${[1, 2, 3, 4].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>`;
+    const body = {
+      1: `<h1>About you</h1><label class="field"><span>Birth date</span><input type="date"></label><label class="field"><span>Gender</span><select><option>Woman</option><option>Man</option></select></label><label class="field"><span>Interested in</span><select><option>Everyone</option><option>Women</option><option>Men</option></select></label><label class="field"><span>Bio</span><textarea rows="3"></textarea></label>`,
+      2: `<h1>What are you into?</h1><label class="field"><span>Interest tags</span><input placeholder="#hiking"></label>${tags(0)}`,
+      3: `<h1>Your photos</h1><p class="muted">Up to 5. Pick one as your Profile Picture.</p><div class="grid" style="grid-template-columns:repeat(3,1fr)">${'<div class="photo"></div>'.repeat(2)}<div class="photo" style="background:var(--line);display:grid;place-items:center">+</div></div>`,
+      4: st.includes('refused') ? `<h1>Where are you?</h1><p>No problem. Type your city or neighbourhood so we can suggest people nearby.</p><label class="field"><span>City or neighbourhood</span><input placeholder="Paris 11e"></label>` : `<h1>Where are you?</h1><p>We use your location, rounded to your neighbourhood, to suggest people nearby. Others never see your exact position.</p><button class="pill primary">Use my location</button> <button class="pill">Enter it by hand</button>`,
+    }[n];
+    return `<div class="narrow card">${steps}${body}<div class="row" style="justify-content:space-between;margin-top:14px">${n > 1 ? '<button class="pill">Back</button>' : '<span></span>'}<button class="pill primary" onclick="${n === 4 ? "S.a='complete';go('discover')" : `go('onboarding','${SCREENS.find(x => x.id === 'onboarding').states[n]}')`}">${n === 4 ? 'Finish' : 'Next'}</button></div></div>`;
+  },
+  discover: st => `<h1>Discover</h1>${sortFilter()}${st === 'loading' ? loading() : st === 'error' ? err() : st === 'empty' ? empty('Nobody matches these filters right now. Try widening the distance or age range.', '<button class="pill">Reset filters</button>') : `<div class="grid">${PEOPLE.map(personCard).join('')}</div><div style="text-align:center;margin-top:16px"><button class="pill">Show more</button></div>`}`,
+  search: st => `<h1>Search</h1><div class="card"><div class="row"><label class="field" style="flex:1"><span>Age</span><input value="25 - 35"></label><label class="field" style="flex:1"><span>Popularity</span><input value="40 - 100"></label><label class="field" style="flex:1"><span>Location</span><input value="Within 20 km of Paris 11e"></label><label class="field" style="flex:1"><span>Tags</span><input value="#jazz #hiking"></label></div><button class="pill primary" onclick="go('search','results')">Search</button></div>
+    ${st === 'criteria' ? '' : st === 'loading' ? '<h2>Results</h2>' + loading() : st === 'error' ? err() : st === 'no results' ? '<h2>Results</h2>' + empty('No one fits all these criteria. Try loosening one.') : `<h2>Results</h2>${sortFilter()}<div class="grid">${PEOPLE.slice(0, 5).map(personCard).join('')}</div>`}`,
+  profile: st => {
+    if (st === 'loading') return '<div class="skel" style="height:400px"></div>';
+    if (st === 'unavailable') return empty('This profile is not available.', `<button class="pill" onclick="go('discover')">Back to Discover</button>`);
+    const status = { 'crushed you': '<div class="banner warn">Lea has a Crush on you.</div>', 'you crushed': '<div class="banner">You sent Lea a Crush.</div>', connected: '<div class="banner warn">You and Lea are connected.</div>' }[st] || '';
+    const action = { 'no relation': '<button class="pill crush">Send a Crush</button>', 'crushed you': '<button class="pill crush">Crush back</button>', 'you crushed': '<button class="pill">Withdraw Crush</button>', connected: `<button class="pill primary" onclick="go('conversation')">Open chat</button><button class="pill">Uncrush</button>`, 'you have no profile picture': '<button class="pill crush" disabled>Send a Crush</button><span class="muted">Add a Profile Picture to send a Crush. <a onclick="go(\'me\')">Add one</a></span>' }[st];
+    return `${status}<div class="row" style="align-items:flex-start"><div style="flex:1;min-width:240px"><div class="photo" style="max-width:360px"></div><div class="row">${'<span class="avatar"></span>'.repeat(4)}</div></div>
+      <div style="flex:1;min-width:240px"><h1>lea, 27</h1><div class="online">● Online</div><p class="muted">Woman · Interested in Everyone · 4 km away · Popularity 87</p><p>Weekend hiker, weekday jazz fan. Looking for someone to share a terrace with.</p>${tags(3)}
+      <div class="row" style="margin-top:16px">${action}</div><div class="row" style="margin-top:20px"><button class="pill danger">Block</button><button class="pill danger">Report as fake</button></div></div></div>`;
+  },
+  activity: st => `<h1>Activity</h1><div class="tabs"><a class="${st !== 'crushes' ? 'on' : ''}" onclick="go('activity','visitors')">Visitors</a><a class="${st === 'crushes' ? 'on' : ''}" onclick="go('activity','crushes')">Crushes received</a></div>
+    ${st === 'loading' ? loading() : st === 'empty' ? empty('No crushes yet. Go say hi.', `<button class="pill primary" onclick="go('discover')">Discover people</button>`) : `<div class="list">${PEOPLE.slice(0, 5).map((p, i) => `<div onclick="go('profile')"><span class="avatar"></span><span style="flex:1"><b>${p.username}</b>, ${p.age}<br><span class="muted">${st === 'crushes' ? 'sent you a Crush' : 'visited your profile'} · ${i + 1} h ago</span></span>${st === 'crushes' ? '<button class="pill crush">Crush back</button>' : ''}</div>`).join('')}</div>`}`,
+  chat: st => `<h1>Conversations</h1>${st === 'loading' ? '<div class="skel" style="height:200px"></div>' : st === 'error' ? err() : st === 'empty' ? empty('No conversations yet. When a Crush is mutual, you can chat here.') : `<div class="list">${PEOPLE.slice(0, 4).map((p, i) => `<div onclick="go('conversation')" style="cursor:pointer"><span class="avatar"></span><span style="flex:1"><b>${p.username}</b> ${i === 0 ? '<span class="online">● Online</span>' : `<span class="muted">last seen ${i} h ago</span>`}<br><span class="muted">${['See you Saturday?', 'Haha true', 'Which trail was it?', 'Nice to meet you'][i]}</span></span>${i < 2 ? '<span class="dot"></span>' : ''}</div>`).join('')}</div>`}`,
+  conversation: st => st === 'loading' ? '<div class="skel" style="height:300px"></div>' : `<div class="row" style="border-bottom:1px solid var(--line);padding-bottom:10px"><a onclick="go('chat')">←</a><span class="avatar"></span><a onclick="go('profile')"><b>lea</b></a><span class="online">● Online</span></div>
+    <div style="padding:12px 0"><div class="bubble">Hey! Saw you like jazz too.</div><div class="bubble me">I do! Have you been to the Duc des Lombards?</div><div class="bubble">Not yet, see you Saturday?</div></div>
+    ${st.startsWith('closed') ? '<div class="banner">This conversation is closed: you are no longer connected.</div>' : ''}
+    <div class="row"><input style="flex:1;padding:9px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--text)" placeholder="Write a message" ${st.startsWith('closed') ? 'disabled' : ''}><button class="pill primary" ${st.startsWith('closed') ? 'disabled' : ''}>Send</button></div>`,
+  notifications: st => `<h1>Notifications</h1>${st === 'loading' ? '<div class="skel" style="height:200px"></div>' : st === 'empty' ? empty('Nothing new. Quiet day.') : `<div class="list">${[['lea', 'sent you a Crush'], ['samir', 'visited your profile'], ['ines', "It's mutual! You are now connected"], ['tom', 'sent you a message'], ['nora', 'withdrew their Crush']].map(([u, t], i) => `<div><span class="avatar"></span><span style="flex:1"><a onclick="go('profile')">${u}</a> ${t}<br><span class="muted">${i + 1} h ago</span></span>${i < 3 ? '<span class="dot"></span>' : ''}</div>`).join('')}</div>`}`,
+  me: st => `<h1>My profile</h1>${S.a === 'incomplete' ? '<div class="banner">Finish your profile to start browsing. <a onclick="go(\'onboarding\')">Continue</a></div>' : ''}
+    <div class="row" style="align-items:flex-start"><div style="flex:1;min-width:240px" class="card"><div class="row"><span class="avatar lg"></span><span><b>jbastard</b><br><span class="muted">Popularity 64 (public)</span><br><a onclick="go('profile','no relation')">See it as others do</a></span></div>
+      <h2>Photos (3/5)</h2><div class="grid" style="grid-template-columns:repeat(5,1fr)">${'<div class="photo"></div>'.repeat(3)}<div class="photo" style="background:var(--line)"></div><div class="photo" style="background:var(--line)"></div></div></div>
+    <div style="flex:1;min-width:240px" class="card"><label class="field"><span>Gender</span><select><option>Man</option></select></label><label class="field"><span>Interested in</span><select><option>Everyone</option></select></label><label class="field"><span>Bio</span><textarea rows="3"></textarea></label>${st === 'field errors' ? '<small class="error" style="padding:0">Bio must be 1 to 500 characters.</small>' : ''}<label class="field"><span>Interest tags</span><input value="#jazz #hiking"></label><label class="field"><span>Location</span><input value="Paris 11e"></label><button class="pill">Use my current location</button>
+    <div style="margin-top:12px"><button class="pill primary">${st === 'saving' ? 'Saving...' : 'Save'}</button></div></div></div>`,
+  settings: () => `<h1>Settings</h1><div class="card" style="max-width:560px"><h2>Account</h2><label class="field"><span>First name</span><input></label><label class="field"><span>Last name</span><input></label><label class="field"><span>Email</span><input></label><label class="field"><span>Username</span><input value="jbastard" disabled></label><button class="pill primary">Save</button>
+    <h2>Password</h2><label class="field"><span>Current password</span><input type="password"></label><label class="field"><span>New password</span><input type="password"></label><button class="pill primary">Change password</button>
+    <h2>Blocked users</h2><p class="muted">(fog: is unblocking possible?)</p><h2>Linked accounts (bonus OAuth)</h2><p class="muted">42 intra · GitHub</p></div>`,
+  map: st => `<h1>Map</h1>${st === 'loading' ? '<div class="skel" style="height:420px"></div>' : '<div class="card" style="height:420px;display:grid;place-items:center;background:var(--green-soft)">Leaflet map with clustered markers</div>'}`,
+  notfound: () => empty('This page does not exist.', `<button class="pill" onclick="go('landing')">Go home</button>`),
+};
+
+function render() {
+  load.done || (load(), load.done = true);
+  const g = gate();
+  let body;
+  if (g) { const [to, why] = g; S.s = to; S.st = screen().states[0]; body = `<div class="banner">${why}</div>` + R[S.s](S.st); }
+  else body = R[S.s](S.st);
+  const shells = { A: shellA, B: shellB, C: shellC };
+  const fr = document.getElementById('frame');
+  fr.className = `frame v${S.v} ${S.f === 'phone' ? 'phone' : ''} ${S.drawer ? 'drawer' : ''}`;
+  fr.innerHTML = shells[S.v](body) + notifPanel();
+  save(); proto();
+}
+function logout() { S.a = 'out'; go('login'); }
+function togglePanel() { if (S.f === 'phone' && S.v !== 'B') return go('notifications'); S.panel = !S.panel; render(); }
+
+const NAMES = { A: 'Top links + phone tab bar', B: 'Sidebar + phone drawer', C: 'Single icon header' };
+function proto() {
+  const sc = screen();
+  document.getElementById('proto').innerHTML = `
+    <button onclick="cycle(-1)">←</button><b>${S.v}</b> ${NAMES[S.v]}<button onclick="cycle(1)">→</button>
+    <select onchange="go(this.value)">${SCREENS.map(x => `<option value="${x.id}" ${x.id === S.s ? 'selected' : ''}>${x.title}</option>`).join('')}</select>
+    <select onchange="S.st=this.value;render()">${sc.states.map(x => `<option ${x === S.st ? 'selected' : ''}>${x}</option>`).join('')}</select>
+    <select onchange="S.a=this.value;render()">${[['out', 'Logged out'], ['incomplete', 'Incomplete profile'], ['complete', 'Complete profile']].map(([k, l]) => `<option value="${k}" ${k === S.a ? 'selected' : ''}>${l}</option>`).join('')}</select>
+    <button onclick="S.f=S.f==='phone'?'desktop':'phone';S.drawer=false;render()">${S.f === 'phone' ? 'Phone 375' : 'Desktop'}</button>
+    <button onclick="S.chat++;S.notif++;render()">+ event</button>
+    <button onclick="toggleInv()">Inventory</button>`;
+}
+function cycle(d) { const k = ['A', 'B', 'C']; S.v = k[(k.indexOf(S.v) + d + 3) % 3]; S.drawer = false; S.panel = false; render(); }
+function toggleInv() {
+  const el = document.getElementById('inv');
+  el.hidden = !el.hidden;
+  el.innerHTML = `<h2>Screen inventory (${SCREENS.length})</h2><table><tr><th>Screen</th><th>Path</th><th>Access</th><th>States</th><th>Rules</th></tr>
+    ${SCREENS.map(x => `<tr><td><a onclick="toggleInv();go('${x.id}')">${x.title}</a></td><td><code>${x.path}</code></td><td>${x.access}</td><td>${x.states.join(' · ')}</td><td>${x.rules || ''}</td></tr>`).join('')}</table>
+    <p>Every screen: header, main, footer (R-GEN-09). Logged-in header: chat badge (R-CHAT-02), notification badge (R-NOTI-02), one-click log out (R-AUTH-06). Toasts on live notifications.</p>`;
+}
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input, textarea, select, [contenteditable]')) return;
+  if (e.key === 'ArrowLeft') cycle(-1);
+  if (e.key === 'ArrowRight') cycle(1);
+});
+render();
+</script>
+</body>
+</html>
